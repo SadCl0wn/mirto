@@ -1,6 +1,6 @@
 from __future__ import division
 
-from models import *
+from darknet import *
 from utils.utils import *
 from utils.datasets import *
 

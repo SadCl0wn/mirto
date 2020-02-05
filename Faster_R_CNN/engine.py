@@ -106,8 +106,7 @@ def evaluate(model, data_loader, threshold, device):
             for i,score in enumerate(rslt['scores']):
                 if score.item() > threshold:
                     predic_xmin,predic_ymin,predic_xmax,predic_ymax = rslt["boxes"][i]
-                    for xmin,ymin,xmax,ymax in tar["boxes"]
-                        # TODO add a tolerance to compar
+                    for xmin,ymin,xmax,ymax in tar["boxes"]:
                         height = ymax-ymin
                         lenght = xmax-xmin
                         ymin = ymin-height//100 #1%

@@ -116,7 +116,7 @@ def evaluate(model, data_loader, threshold, device):
                         if predic_xmin >= xmin and predic_xmax <= xmax and predic_ymin >= ymin and predic_ymax <= ymax:
                             label[i] = 1
                             break
-            confmat.update(tar['labels'][i].flatten(), label.flatten())
+            confmat.update(tar['labels'].flatten(), label.flatten())
 
         outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time

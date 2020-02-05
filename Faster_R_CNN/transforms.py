@@ -30,11 +30,12 @@ class RandomHorizontalFlip(object):
 
     def __call__(self, image, target):
         if random.random() < self.prob:
-            height, width = image.shape[-2:]
+            _, width = image.shape[-2:]
             image = image.flip(-1)
             bbox = target["boxes"]
-            bbox[:, [0, 2]] = width - bbox[:, [2, 0]]
-            target["boxes"] = bbox
+            if len(bbox) != 0:
+                bbox[:, [0, 2]] = width - bbox[:, [2, 0]]
+                target["boxes"] = bbox
             if "masks" in target:
                 target["masks"] = target["masks"].flip(-1)
             if "keypoints" in target:

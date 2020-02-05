@@ -102,8 +102,8 @@ def evaluate(model, data_loader, threshold, device):
         model_time = time.time()
         outputs = model(image)
         for rslt,tar in zip(outputs,targets):
-            label = torch.zeros(len(rslt['scores']), dtype=torch.int64, device=device)
             for i,score in enumerate(rslt['scores']):
+                label = torch.zeros(1, dtype=torch.int64, device=device)
                 if score.item() > threshold:
                     predic_xmin,predic_ymin,predic_xmax,predic_ymax = rslt["boxes"][i]
                     for xmin,ymin,xmax,ymax in tar["boxes"]:
@@ -116,7 +116,7 @@ def evaluate(model, data_loader, threshold, device):
                         if predic_xmin >= xmin and predic_xmax <= xmax and predic_ymin >= ymin and predic_ymax <= ymax:
                             label[i] = 1
                             break
-            confmat.update(tar['labels'].flatten(), label.flatten())
+                confmat.update(tar['labels'][i].flatten(), label.flatten())
 
         outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time

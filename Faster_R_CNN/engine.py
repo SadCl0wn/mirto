@@ -101,6 +101,37 @@ def evaluate(model, data_loader, threshold, device):
         torch.cuda.synchronize()
         model_time = time.time()
         outputs = model(image)
+        
+        ###
+        tp = 0
+        for i, box in enumerate(outputs[0]['boxes']):
+            label = outputs[0]['labels'][i].item()
+            score = outputs[0]['scores'][i].item()
+            iou = 0
+
+            for j, trg_box in enumerate(targets[0]['boxes']):
+                trg_label = targets[0]['labels'][j].item()
+                if trg_label == label:
+                    iou_tmp = utils.compute_iou(trg_box, box)
+                    if iou_tmp > iou:
+                        iou = iou_tmp
+        
+            if score > threshold:
+                if iou < 0.5:
+                    # update false positive
+                    confmat.update(label0, label1)
+                elif iou >= 0.5:
+                    # update true positive
+                    confmat.update(label1, label1)
+                    tp += 1
+
+        fn = len(targets[0]['boxes']) - tp
+        for i in range(fn):
+            # update false negative
+            confmat.update(label1, label0)
+        ###
+        
+        '''
         for rslt,tar in zip(outputs,targets):
             for i,score in enumerate(rslt['scores']):
                 label = torch.zeros(1, dtype=torch.int64, device=device)
@@ -117,6 +148,7 @@ def evaluate(model, data_loader, threshold, device):
                             label[i] = 1
                             break
                 confmat.update(tar['labels'][i].flatten(), label.flatten())
+        '''
 
         outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time

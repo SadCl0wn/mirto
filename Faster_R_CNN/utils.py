@@ -329,6 +329,43 @@ def accuracy(output, target, topk=(1,)):
         return res
 
 
+def compute_iou(gt_bbox, pred_bbox):
+    x_topleft_gt, y_topleft_gt, x_bottomright_gt, y_bottomright_gt= gt_bbox
+    x_topleft_p, y_topleft_p, x_bottomright_p, y_bottomright_p= pred_bbox
+
+    if (x_topleft_gt > x_bottomright_gt) or (y_topleft_gt> y_bottomright_gt):
+        raise AssertionError("Ground Truth Bounding Box is not correct")
+    if (x_topleft_p > x_bottomright_p) or (y_topleft_p> y_bottomright_p):
+        raise AssertionError("Predicted Bounding Box is not correct",x_topleft_p, x_bottomright_p,y_topleft_p,y_bottomright_gt)
+    
+    #if the GT bbox and predcited BBox do not overlap then iou=0
+    if(x_bottomright_gt< x_topleft_p):
+        # If bottom right of x-coordinate  GT  bbox is less than or above the top left of x coordinate of  the predicted BBox
+        return 0.0
+    if(y_bottomright_gt< y_topleft_p):
+        # If bottom right of y-coordinate  GT  bbox is less than or above the top left of y coordinate of  the predicted BBox
+        return 0.0
+    if(x_topleft_gt> x_bottomright_p):
+        # If bottom right of x-coordinate  GT  bbox is greater than or below the bottom right  of x coordinate of  the predcited BBox
+        return 0.0
+    if(y_topleft_gt> y_bottomright_p):
+        # If bottom right of y-coordinate  GT  bbox is greater than or below the bottom right  of y coordinate of  the predcited BBox
+        return 0.0
+
+    GT_bbox_area = (x_bottomright_gt -  x_topleft_gt + 1) * (  y_bottomright_gt -y_topleft_gt + 1)
+    Pred_bbox_area =(x_bottomright_p - x_topleft_p + 1 ) * ( y_bottomright_p -y_topleft_p + 1)
+    
+    x_top_left =np.max([x_topleft_gt, x_topleft_p])
+    y_top_left = np.max([y_topleft_gt, y_topleft_p])
+    x_bottom_right = np.min([x_bottomright_gt, x_bottomright_p])
+    y_bottom_right = np.min([y_bottomright_gt, y_bottomright_p])
+    
+    intersection_area = (x_bottom_right- x_top_left + 1) * (y_bottom_right-y_top_left  + 1)
+    union_area = (GT_bbox_area + Pred_bbox_area - intersection_area)
+
+    return intersection_area/union_area
+
+
 class ConfusionMatrix(object):
     def __init__(self, num_classes):
         self.num_classes = num_classes
@@ -363,14 +400,18 @@ class ConfusionMatrix(object):
             return
         torch.distributed.barrier()
         torch.distributed.all_reduce(self.mat)
-    
+
     def __str__(self):
         acc_global, acc, iu, precision, recall, f1_score = self.compute()
+        tp = self.mat[1][1]
+        fp = self.mat[0][1]
+        fn = self.mat[1][0]
         return (
                 'Confusion Matrix:\n'
-                '[Actual N, Actual P] \ [Predicted N, Predicted P]\n{}\n'
+                '           Predicted N, Predicted P\n'
+                'Actual N      --           {}\n'
+                'Actual P      {}           {}\n'
                 'True positive: {}\n'
-                'True negative: {}\n'
                 'False positive: {}\n'
                 'False negative: {}\n'
                 'Precision: {:.1f}\n'
@@ -380,11 +421,8 @@ class ConfusionMatrix(object):
                 'Average row correct: {}\n'
                 'IoU: {}\n'
                 'mean IoU: {:.1f}').format(
-                                           self.mat,
-                                           self.mat[1][1],
-                                           self.mat[0][0],
-                                           self.mat[0][1],
-                                           self.mat[1][0],
+                                           fp, fn, tp,
+                                           tp, fp, fn,
                                            precision * 100,                                           
                                            recall * 100,
                                            f1_score * 100,                                           
@@ -392,8 +430,8 @@ class ConfusionMatrix(object):
                                            ['{:.1f}'.format(i) for i in (acc * 100).tolist()],
                                            ['{:.1f}'.format(i) for i in (iu * 100).tolist()],
                                            iu.mean().item() * 100)
-
-
+    
+    
 def plot_loss_accuracy_trend(loss_values, accuracy_values):
     
     plt.figure(figsize=(15,5))

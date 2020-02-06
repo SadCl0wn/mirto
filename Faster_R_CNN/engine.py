@@ -80,7 +80,7 @@ def _get_iou_types(model):
 
 
 @torch.no_grad()
-def evaluate(model, data_loader, threshold, device):
+def evaluate(model, data_loader, conf_threshold, iou_threshold, device):
     n_threads = torch.get_num_threads()
     # FIXME remove this and make paste_masks_in_image run on the GPU
     torch.set_num_threads(1)
@@ -116,11 +116,11 @@ def evaluate(model, data_loader, threshold, device):
                     if iou_tmp > iou:
                         iou = iou_tmp
         
-            if score > threshold:
-                if iou < 0.5:
+            if score > conf_threshold:
+                if iou < iou_threshold:
                     # update false positive
                     confmat.update(label0, label1)
-                elif iou >= 0.5:
+                elif iou >= iou_threshold:
                     # update true positive
                     confmat.update(label1, label1)
                     tp += 1

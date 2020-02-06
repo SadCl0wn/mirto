@@ -94,6 +94,9 @@ def evaluate(model, data_loader, conf_threshold, iou_threshold, device):
     iou_types = _get_iou_types(model)
     coco_evaluator = CocoEvaluator(coco, iou_types)
 
+    label0 = torch.zeros(1, dtype=torch.int64, device=device).flatten()
+    label1 = torch.ones(1, dtype=torch.int64, device=device).flatten()
+    
     for image, targets in metric_logger.log_every(data_loader, 100, header):
         image = list(img.to(device) for img in image)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]

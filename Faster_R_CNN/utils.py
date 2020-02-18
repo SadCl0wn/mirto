@@ -437,8 +437,8 @@ def plot_loss_accuracy_trend(loss_values, accuracy_values):
     plt.figure(figsize=(15,5))
     plt.subplot(1, 2, 1)
 
-    iterations = np.arange(1, len(loss_values[0]+1))
-    epochs = np.arange(1, len(accuracy_values[0]+1))
+    iterations = np.arange(1, len(loss_values[0])+1)
+    epochs = np.arange(1, len(accuracy_values[0])+1)
         
     plt.plot(iterations, loss_values[0], label="loss")
     plt.plot(iterations, loss_values[1], label="loss_classifier")
